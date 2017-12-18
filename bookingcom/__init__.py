@@ -47,7 +47,7 @@ class BaseEndPointIterator(object):
         """
         return self
 
-    def next(self):
+    def __next__(self):
         """Implements ``iterator`` interface"""
         current = None
         if not self.buffer:
@@ -161,6 +161,63 @@ class XmlRpcEndPointIterator(BaseEndPointIterator):
         return buffer
 
 
+class JsonEndPointIterator(BaseEndPointIterator):
+    """``BaseEndPointIterator`` implemetation uses ``json`` to fetch
+    booking.com api data
+
+    """
+    BASE_URL = 'https://distribution-xml.booking.com/2.0/json'
+
+    def __init__(self, end_point, rows=None, base_url=None, username=None,
+                 password=None):
+        """Constructor
+
+        :param base_url: base api url
+        :param type: str
+
+        :param username: api username
+        :param type: str
+
+        :param password: api password
+        :param type: str
+
+        """
+        super(JsonEndPointIterator, self).__init__(end_point, rows=rows)
+        self.base_url = base_url or self.BASE_URL
+        self.username = username
+        self.password = password
+
+    @classmethod
+    def create_url(klass, end_point, base_url=None):
+        """Helper method creates end point urls
+
+        :param end_point: end point name
+        :param type: str
+
+        :param base_url: base url
+        :param type: str
+
+        """
+        return '%s/%s' % (base_url or klass.BASE_URL, end_point)
+
+    def _fetch_buffer(self):
+        """Fetch data from actual booking.com api"""
+        url = JsonEndPointIterator.create_url(self.end_point)
+        params = {}
+        if self.offset:
+            params['offset'] = self.offset
+            params['rows'] = self.rows
+
+        print(self.username, self.password)
+
+        response = requests.get(url, auth=(self.username, self.password),
+                                 params=params)
+        response.raise_for_status()
+        payload = response.json()
+        buffer = payload.get('result', None)
+        return buffer
+
+
 class BookingcomClient(object):
     """Bookingcom Api Client based on endpoint iterators which defines one per
     API endpoint automatically
@@ -172,29 +229,22 @@ class BookingcomClient(object):
     """
 
     _END_POINTS = (
-        'getCities',
-        'getCountries',
-        'getDistricts',
-        'getDistrictHotels',
-        'getFacilityTypes',
-        'getHotelDescriptionPhotos',
-        'getHotelDescriptionTranslations',
-        'getHotelDescriptionTypes',
-        'getHotelFacilities',
-        'getHotelFacilityTypes',
-        'getHotelLogoPhotos',
-        'getHotelPhotos',
-        'getHotelTranslations',
-        'getHotelTypes',
-        'getHotels',
-        'getRegions',
-        'getRegionHotels',
-        'getRooms',
-        'getRoomTypes',
-        'getRoomFacilityTypes',
-        'getRoomFacilities',
-        'getRoomTranslations',
-        'getRoomPhotos',
+        'blockAvailability',
+        'hotelAvailability',
+        'autocomplete',
+        'chainTypes',
+        'changedHotels',
+        'cities',
+        'countries',
+        'districts',
+        'facilityTypes',
+        'hotelFacilityTypes',
+        'hotels',
+        'hotelTypes',
+        'paymentTypes',
+        'regions',
+        'roomFacilityTypes',
+        'roomTypes'
     )
 
     def __init__(self, end_point_iterator_class=FilesystemEndPointIterator,
