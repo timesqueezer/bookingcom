@@ -24,7 +24,7 @@ class BaseEndPointIterator(object):
     """
     _MAX_ROWS = 1000
 
-    def __init__(self, end_point, rows=None):
+    def __init__(self, end_point, rows=None, params={}):
         """Constructor
 
         :param end_point: name of api end point
@@ -39,6 +39,7 @@ class BaseEndPointIterator(object):
         self.buffer = None
         self.cursor = 0
         self.offset = 0
+        self.params = params
 
     def __iter__(self):
         """Implements ``iterable`` interface by referencing ``self`` is an
@@ -169,7 +170,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
     BASE_URL = 'https://distribution-xml.booking.com/2.0/json'
 
     def __init__(self, end_point, rows=None, base_url=None, username=None,
-                 password=None):
+                 password=None, params={}):
         """Constructor
 
         :param base_url: base api url
@@ -182,7 +183,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
         :param type: str
 
         """
-        super(JsonEndPointIterator, self).__init__(end_point, rows=rows)
+        super(JsonEndPointIterator, self).__init__(end_point, rows=rows, params=params)
         self.base_url = base_url or self.BASE_URL
         self.username = username
         self.password = password
@@ -203,16 +204,28 @@ class JsonEndPointIterator(BaseEndPointIterator):
     def _fetch_buffer(self):
         """Fetch data from actual booking.com api"""
         url = JsonEndPointIterator.create_url(self.end_point)
-        params = {}
+        params = self.params
         if self.offset:
             params['offset'] = self.offset
+
+        if self.rows:
             params['rows'] = self.rows
 
-        print(self.username, self.password)
+        from pprint import pprint
+        pprint(params)
+        print(url)
 
         response = requests.get(url, auth=(self.username, self.password),
                                  params=params)
-        response.raise_for_status()
+        # response.raise_for_status()
+        if response.status_code != 200:
+            try:
+                pprint(response.json())
+            except:
+                pass
+
+            return []
+
         payload = response.json()
         buffer = payload.get('result', None)
         return buffer
