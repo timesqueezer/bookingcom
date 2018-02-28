@@ -23,6 +23,7 @@ class BaseEndPointIterator(object):
 
     """
     _MAX_ROWS = 1000
+    _ENDPOINTS_WITHOUT_ROWS = ['autocomplete']
 
     def __init__(self, end_point, rows=None, params={}):
         """Constructor
@@ -208,7 +209,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
         if self.offset:
             params['offset'] = self.offset
 
-        if self.rows:
+        if self.rows and self.end_point not in BaseEndPointIterator._ENDPOINTS_WITHOUT_ROWS:
             params['rows'] = self.rows
 
         from pprint import pprint
