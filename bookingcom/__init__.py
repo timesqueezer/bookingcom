@@ -2,6 +2,7 @@
 
 import os
 import xmltodict
+import json
 import requests
 
 
@@ -171,7 +172,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
     BASE_URL = 'https://distribution-xml.booking.com/2.0/json'
 
     def __init__(self, end_point, rows=None, base_url=None, username=None,
-                 password=None, params={}):
+                 password=None, cache_path=None, params={}):
         """Constructor
 
         :param base_url: base api url
@@ -188,6 +189,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
         self.base_url = base_url or self.BASE_URL
         self.username = username
         self.password = password
+        self.cache_path = cache_path
 
     @classmethod
     def create_url(klass, end_point, base_url=None):
@@ -202,7 +204,19 @@ class JsonEndPointIterator(BaseEndPointIterator):
         """
         return '%s/%s' % (base_url or klass.BASE_URL, end_point)
 
+    def is_cached(self):
+        if not self.cache_path:
+            return False
+
+        return self.end_point in [p.split('.')[0] for p in os.listdir(self.cache_path)]
+
     def _fetch_buffer(self):
+        if self.is_cached():
+            print('YES, is cached')
+            with open(os.path.join(self.cache_path, self.end_point + '.json')) as f:
+                buffer = json.load(f)
+                return buffer
+
         """Fetch data from actual booking.com api"""
         url = JsonEndPointIterator.create_url(self.end_point)
         params = self.params
@@ -218,6 +232,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
 
         response = requests.get(url, auth=(self.username, self.password),
                                  params=params)
+
         # response.raise_for_status()
         if response.status_code != 200:
             try:
@@ -273,9 +288,9 @@ class BookingcomClient(object):
 
         """
         def generate_end_point_iterator(end_point):
-            def aux(rows=None):
-                rows = rows or BaseEndPointIterator._MAX_ROWS
-                return end_point_iterator_class(end_point, rows, **kwargs)
+            def aux():
+                # rows = rows or BaseEndPointIterator._MAX_ROWS
+                return end_point_iterator_class(end_point, **kwargs)
             return aux
 
         for end_point in self._END_POINTS:
