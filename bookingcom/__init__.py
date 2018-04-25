@@ -190,6 +190,8 @@ class JsonEndPointIterator(BaseEndPointIterator):
         self.username = username
         self.password = password
         self.cache_path = cache_path
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
 
     @classmethod
     def create_url(klass, end_point, base_url=None):
