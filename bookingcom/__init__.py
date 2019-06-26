@@ -214,6 +214,7 @@ class JsonEndPointIterator(BaseEndPointIterator):
 
     def _fetch_buffer(self):
         if self.is_cached():
+            print('YES, is cached')
             with open(os.path.join(self.cache_path, self.end_point + '.json')) as f:
                 buffer = json.load(f)
                 return buffer
@@ -227,10 +228,9 @@ class JsonEndPointIterator(BaseEndPointIterator):
         if self.rows and self.end_point not in BaseEndPointIterator._ENDPOINTS_WITHOUT_ROWS:
             params['rows'] = self.rows
 
-        """from pprint import pprint
+        from pprint import pprint
         pprint(params)
         print(url)
-        print((self.username, self.password))"""
 
         response = requests.get(url, auth=(self.username, self.password),
                                  params=params)
